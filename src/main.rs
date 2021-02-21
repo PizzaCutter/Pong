@@ -25,13 +25,13 @@ enum Direction {
 struct Paddle{
     position: Point,
     sprite: Rect,
-    lastInputDirection: Direction,
+    last_input_direction: Direction,
 }
 
 impl Paddle {
     fn update(&mut self)
     {
-        match self.lastInputDirection{
+        match self.last_input_direction{
             Direction::Default => { },
             Direction::Up => {
                 self.position = self.position.offset(0, -PADDLE_MOVEMENT_SPEED);
@@ -41,12 +41,12 @@ impl Paddle {
             },
         }
 
-        let halfPlayerSize = (self.sprite.width()) as i32;
-        if(self.position.y <= halfPlayerSize) {
-            self.position.y = halfPlayerSize;
+        let half_player_size = (self.sprite.width()) as i32;
+        if self.position.y <= half_player_size {
+            self.position.y = half_player_size;
         }
-        if(self.position.y >= WINDOW_HEIGHT as i32 - halfPlayerSize) {
-            self.position.y = WINDOW_HEIGHT as i32 - halfPlayerSize;
+        if self.position.y >= WINDOW_HEIGHT as i32 - half_player_size {
+            self.position.y = WINDOW_HEIGHT as i32 - half_player_size;
         }
     }
 }
@@ -54,37 +54,38 @@ impl Paddle {
 struct Ball {
    position: Point, 
    radius: i32,
-   movementSpeed: i32,
-   movementDirection: Point
+   movement_speed: i32,
+   movement_direction: Point
 }
 
 impl Ball {
-    fn update(&mut self, leftPaddle: &Paddle, rightPaddle: &Paddle, canvas: &WindowCanvas) 
+    fn update(&mut self, _left_paddle: &Paddle, _right_paddle: &Paddle, canvas: &WindowCanvas) 
     {
         let (width, height) = canvas.output_size().unwrap();
-        if(self.position.x - self.radius < 0 || self.position.x >= width as i32)
+        if self.position.x - self.radius < 0 || self.position.x >= width as i32
         {
-            self.movementDirection.x *= -1;
+            self.movement_direction.x *= -1;
         }
-        if(self.position.y - self.radius < 0 || self.position.y >= height as i32) {
-            self.movementDirection.y *= -1;
+        if self.position.y - self.radius < 0 || self.position.y >= height as i32 
+        {
+            self.movement_direction.y *= -1;
         }
 
-        self.position += self.movementDirection * self.movementSpeed;
+        self.position += self.movement_direction * self.movement_speed;
     }
 }
 
 fn render_paddle(canvas: &mut WindowCanvas, texture: &Texture, paddle: &Paddle) -> Result<(), String> {
-    let paddleWidth = paddle.sprite.width() as i32;
-    let paddleHeight = paddle.sprite.height() as i32;
-    let renderRect = Rect::new(paddle.position.x - paddleWidth / 2, paddle.position.y - paddleHeight / 2, paddleWidth as u32, paddleHeight as u32);
-    canvas.copy(texture, None, renderRect);
+    let paddle_width = paddle.sprite.width() as i32;
+    let paddle_height = paddle.sprite.height() as i32;
+    let render_destination = Rect::new(paddle.position.x - paddle_width / 2, paddle.position.y - paddle_height / 2, paddle_width as u32, paddle_height as u32);
+    canvas.copy(texture, None, render_destination).unwrap();
     Ok(())
 }
 
 fn render_ball(canvas: &mut WindowCanvas, texture: &Texture, ball: &Ball) -> Result<(), String> {
-    let renderRect = Rect::new((ball.position.x - ball.radius) as i32, (ball.position.y - ball.radius) as i32, ball.radius as u32, ball.radius as u32);
-    canvas.copy(texture, None, renderRect);
+    let render_destination = Rect::new((ball.position.x - ball.radius) as i32, (ball.position.y - ball.radius) as i32, ball.radius as u32, ball.radius as u32);
+    canvas.copy(texture, None, render_destination).unwrap();
     Ok(())
 }
 
@@ -102,21 +103,21 @@ pub fn main() {
     let (width, height) = canvas.output_size().unwrap();
 
     let mut rng = rand::thread_rng();
-    let mut leftPaddle = Paddle {
+    let mut left_paddle = Paddle {
         position: Point::new(25, height as i32 / 2),
         sprite: Rect::new(0, 0, 25, 100),
-        lastInputDirection: Direction::Default,
+        last_input_direction: Direction::Default,
     };
-    let mut rightPaddle = Paddle {
+    let mut right_paddle = Paddle {
         position: Point::new(WINDOW_WIDTH as i32 - 25, height as i32 / 2),
         sprite: Rect::new(0, 0, 25, 100),
-        lastInputDirection: Direction::Default,
+        last_input_direction: Direction::Default,
     };
     let mut ball = Ball {
         position: Point::new(width as i32 / 2, height as i32 / 2),
         radius: 32,
-        movementSpeed: 3,
-        movementDirection: Point::new(rng.gen_range(-1..1), (rng.gen_range(-1..1))),
+        movement_speed: 3,
+        movement_direction: Point::new(rng.gen_range(-1..1), rng.gen_range(-1..1)),
     };
 
     let _image_context = image::init(InitFlag::PNG | InitFlag::JPG);
@@ -137,34 +138,34 @@ pub fn main() {
                         break 'running
                 },
                 Event::KeyDown { keycode: Some(Keycode::Up), .. } => {
-                    rightPaddle.lastInputDirection = Direction::Up;
+                    right_paddle.last_input_direction = Direction::Up;
                 },
                 Event::KeyDown { keycode: Some(Keycode::Down), .. } => {
-                    rightPaddle.lastInputDirection = Direction::Down;
+                    right_paddle.last_input_direction = Direction::Down;
                 },
                 Event::KeyDown { keycode: Some(Keycode::W), .. } => {
-                    leftPaddle.lastInputDirection = Direction::Up;
+                    left_paddle.last_input_direction = Direction::Up;
                 },
                 Event::KeyDown { keycode: Some(Keycode::S), .. } => {
-                    leftPaddle.lastInputDirection = Direction::Down;
+                    left_paddle.last_input_direction = Direction::Down;
                 },
                 _ => {}
             }
         }
 
         // Updating gameplay
-        leftPaddle.update();
-        rightPaddle.update();
-        ball.update(&leftPaddle, &rightPaddle, &canvas);
+        left_paddle.update();
+        right_paddle.update();
+        ball.update(&left_paddle, &right_paddle, &canvas);
 
         // Rendering
         i = (i + 1) % 255;
         canvas.set_draw_color(Color::RGB(i, 64, 255 - i));
         canvas.clear();
 
-        render_paddle(&mut canvas, &texture, &leftPaddle);
-        render_paddle(&mut canvas, &texture, &rightPaddle);
-        render_ball(&mut canvas, &ball_texture, &ball);
+        render_paddle(&mut canvas, &texture, &left_paddle).unwrap();
+        render_paddle(&mut canvas, &texture, &right_paddle).unwrap();
+        render_ball(&mut canvas, &ball_texture, &ball).unwrap();
 
         canvas.present();
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
