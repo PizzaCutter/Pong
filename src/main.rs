@@ -9,8 +9,10 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::{WindowCanvas, Texture};
 use sdl2::image::{self, LoadTexture, InitFlag};
 use rand::Rng;
+use std::ops::Add;
+use std::ops::AddAssign;
 
-const PADDLE_MOVEMENT_SPEED: i32 = 5;
+const PADDLE_MOVEMENT_SPEED: f32 = 5.0;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 
@@ -22,11 +24,47 @@ enum Direction {
 }
 
 #[derive(Debug)]
+struct Vector2
+{
+    x: f32,
+    y: f32,
+}
+
+impl Vector2
+{
+    fn new(in_x : f32, in_y : f32) -> Vector2
+    {
+        return Vector2{x: in_x, y: in_y};
+    }
+}
+
+impl Add<Vector2> for Vector2 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl AddAssign for Vector2{
+    fn add_assign(&mut self, other: Self) {
+        *self = Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        };
+    }
+}
+
+#[derive(Debug)]
 struct Paddle{
-    position: Point,
+    position: Vector2,
     sprite: Rect,
     last_input_direction: Direction,
 }
+
 
 impl Paddle {
     fn update(&mut self)
@@ -34,19 +72,20 @@ impl Paddle {
         match self.last_input_direction{
             Direction::Default => { },
             Direction::Up => {
-                self.position = self.position.offset(0, -PADDLE_MOVEMENT_SPEED);
+                // TODO[rsmekens]: implemented AddAssign operator 
+                self.position += Vector2::new(0.0, -PADDLE_MOVEMENT_SPEED);
             },
             Direction::Down => {
-                self.position = self.position.offset(0, PADDLE_MOVEMENT_SPEED);
+                self.position += Vector2::new(0.0, PADDLE_MOVEMENT_SPEED);
             },
         }
 
-        let half_player_size = (self.sprite.width()) as i32;
+        let half_player_size = (self.sprite.width()) as f32;
         if self.position.y <= half_player_size {
             self.position.y = half_player_size;
         }
-        if self.position.y >= WINDOW_HEIGHT as i32 - half_player_size {
-            self.position.y = WINDOW_HEIGHT as i32 - half_player_size;
+        if self.position.y >= WINDOW_HEIGHT as f32 - half_player_size {
+            self.position.y = WINDOW_HEIGHT as f32 - half_player_size;
         }
     }
 }
@@ -78,7 +117,7 @@ impl Ball {
 fn render_paddle(canvas: &mut WindowCanvas, texture: &Texture, paddle: &Paddle) -> Result<(), String> {
     let paddle_width = paddle.sprite.width() as i32;
     let paddle_height = paddle.sprite.height() as i32;
-    let render_destination = Rect::new(paddle.position.x - paddle_width / 2, paddle.position.y - paddle_height / 2, paddle_width as u32, paddle_height as u32);
+    let render_destination = Rect::new(paddle.position.x as i32 - paddle_width / 2, paddle.position.y as i32 - paddle_height / 2, paddle_width as u32, paddle_height as u32);
     canvas.copy(texture, None, render_destination).unwrap();
     Ok(())
 }
@@ -104,12 +143,12 @@ pub fn main() {
 
     let mut rng = rand::thread_rng();
     let mut left_paddle = Paddle {
-        position: Point::new(25, height as i32 / 2),
+        position: Vector2::new(25.0, height as f32 * 0.5),
         sprite: Rect::new(0, 0, 25, 100),
         last_input_direction: Direction::Default,
     };
     let mut right_paddle = Paddle {
-        position: Point::new(WINDOW_WIDTH as i32 - 25, height as i32 / 2),
+        position: Vector2::new(WINDOW_WIDTH as f32 - 25.0, height as f32 * 0.5),
         sprite: Rect::new(0, 0, 25, 100),
         last_input_direction: Direction::Default,
     };
