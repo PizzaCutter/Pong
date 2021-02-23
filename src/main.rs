@@ -11,8 +11,8 @@ use sdl2::image::{self, LoadTexture, InitFlag};
 use rand::Rng;
 use std::ops::Add;
 use std::ops::AddAssign;
+use std::ops::Mul;
 
-const PADDLE_MOVEMENT_SPEED: f32 = 5.0;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 
@@ -23,7 +23,7 @@ enum Direction {
     Down,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Vector2
 {
     x: f32,
@@ -58,11 +58,23 @@ impl AddAssign for Vector2{
     }
 }
 
+impl Mul<f32> for Vector2 {
+    type Output = Self;
+
+    fn mul(self, scalar: f32) -> Self::Output {
+        Self {
+            x: self.x * scalar,
+            y: self.y * scalar
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Paddle{
     position: Vector2,
     sprite: Rect,
     last_input_direction: Direction,
+    movement_speed: f32,
 }
 
 
@@ -72,11 +84,10 @@ impl Paddle {
         match self.last_input_direction{
             Direction::Default => { },
             Direction::Up => {
-                // TODO[rsmekens]: implemented AddAssign operator 
-                self.position += Vector2::new(0.0, -PADDLE_MOVEMENT_SPEED);
+                self.position += Vector2::new(0.0, -self.movement_speed);
             },
             Direction::Down => {
-                self.position += Vector2::new(0.0, PADDLE_MOVEMENT_SPEED);
+                self.position += Vector2::new(0.0, self.movement_speed);
             },
         }
 
@@ -91,23 +102,23 @@ impl Paddle {
 }
 
 struct Ball {
-   position: Point, 
+   position: Vector2, 
    radius: i32,
-   movement_speed: i32,
-   movement_direction: Point
+   movement_speed: f32,
+   movement_direction: Vector2 
 }
 
 impl Ball {
     fn update(&mut self, _left_paddle: &Paddle, _right_paddle: &Paddle, canvas: &WindowCanvas) 
     {
         let (width, height) = canvas.output_size().unwrap();
-        if self.position.x - self.radius < 0 || self.position.x >= width as i32
+        if ((self.position.x - self.radius as f32) < 0.0 || self.position.x >= width as f32)
         {
-            self.movement_direction.x *= -1;
+            self.movement_direction.x *= -1.0;
         }
-        if self.position.y - self.radius < 0 || self.position.y >= height as i32 
+        if ((self.position.y - self.radius as f32) < 0.0 || self.position.y >= height as f32) 
         {
-            self.movement_direction.y *= -1;
+            self.movement_direction.y *= -1.0;
         }
 
         self.position += self.movement_direction * self.movement_speed;
@@ -123,7 +134,7 @@ fn render_paddle(canvas: &mut WindowCanvas, texture: &Texture, paddle: &Paddle) 
 }
 
 fn render_ball(canvas: &mut WindowCanvas, texture: &Texture, ball: &Ball) -> Result<(), String> {
-    let render_destination = Rect::new((ball.position.x - ball.radius) as i32, (ball.position.y - ball.radius) as i32, ball.radius as u32, ball.radius as u32);
+    let render_destination = Rect::new((ball.position.x as i32 - ball.radius) as i32, (ball.position.y as i32 - ball.radius) as i32, ball.radius as u32, ball.radius as u32);
     canvas.copy(texture, None, render_destination).unwrap();
     Ok(())
 }
@@ -146,17 +157,19 @@ pub fn main() {
         position: Vector2::new(25.0, height as f32 * 0.5),
         sprite: Rect::new(0, 0, 25, 100),
         last_input_direction: Direction::Default,
+        movement_speed: 3.0,
     };
     let mut right_paddle = Paddle {
         position: Vector2::new(WINDOW_WIDTH as f32 - 25.0, height as f32 * 0.5),
         sprite: Rect::new(0, 0, 25, 100),
         last_input_direction: Direction::Default,
+        movement_speed: 3.0,
     };
     let mut ball = Ball {
-        position: Point::new(width as i32 / 2, height as i32 / 2),
+        position: Vector2::new(width as f32 * 0.5, height as f32 * 0.5),
         radius: 32,
-        movement_speed: 3,
-        movement_direction: Point::new(rng.gen_range(-1..1), rng.gen_range(-1..1)),
+        movement_speed: 3.0,
+        movement_direction: Vector2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)),
     };
 
     let _image_context = image::init(InitFlag::PNG | InitFlag::JPG);
