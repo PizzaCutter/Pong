@@ -12,6 +12,8 @@ use rand::Rng;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Mul;
+use std::ops::Div;
+use std::ops::DivAssign;
 
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
@@ -36,6 +38,16 @@ impl Vector2
     {
         return Vector2{x: in_x, y: in_y};
     }
+
+    fn magnitude(self) -> f32{
+        (self.x.powf(2.0) + self.y.powf(2.0)).sqrt()
+    }
+
+    fn normalize(&mut self) 
+    {
+        let magnitude =  self.magnitude();
+        *self /= magnitude;
+    }
 }
 
 impl Add<Vector2> for Vector2 {
@@ -55,6 +67,15 @@ impl AddAssign for Vector2{
             x: self.x + other.x,
             y: self.y + other.y,
         };
+    }
+}
+
+impl DivAssign<f32> for Vector2 {
+    fn div_assign(&mut self, scalar: f32) {
+        *self = Self {
+            x: self.x / scalar,
+            y: self.y / scalar,
+        }
     }
 }
 
