@@ -135,11 +135,41 @@ impl Ball {
         let (width, height) = canvas.output_size().unwrap();
         if ((self.position.x - self.radius as f32) < 0.0 || self.position.x >= width as f32)
         {
-            self.movement_direction.x *= -1.0;
+            if(self.movement_direction.x > 0.0)
+            {
+                self.movement_direction.x *= -1.0;
+            }
         }
         if ((self.position.y - self.radius as f32) < 0.0 || self.position.y >= height as f32) 
         {
             self.movement_direction.y *= -1.0;
+        }
+
+        // CHECK COLLISION WITH LEFT PADDLE
+        // TODO[rsmekens]: should only check this if on next movement update we are behind the paddle
+        if self.movement_direction.x < 0.0 
+        {
+            if (self.position.x - self.radius as f32) < (_left_paddle.position.x + _left_paddle.sprite.width() as f32 * 0.5)
+            {
+                if (self.position.y < _left_paddle.position.y + _left_paddle.sprite.height() as f32 * 0.5) 
+                && (self.position.y > _left_paddle.position.y - _left_paddle.sprite.height() as f32 * 0.5)
+                {
+                    self.movement_direction.x *= -1.0;
+                }
+            }
+        }
+
+        //CHECK COLLISION WITH RIGHT PADDLE
+        if self.movement_direction.x > 0.0
+        {
+            if (self.position.x + self.radius as f32) > (_right_paddle.position.x + _right_paddle.sprite.width() as f32 * 0.5)
+            {
+                if (self.position.y < _right_paddle.position.y + _right_paddle.sprite.height() as f32 * 0.5) 
+                && (self.position.y > _right_paddle.position.y - _right_paddle.sprite.height() as f32 * 0.5)
+                {
+                    self.movement_direction.x *= -1.0;
+                }
+            }
         }
 
         self.position += self.movement_direction * self.movement_speed;
@@ -190,7 +220,8 @@ pub fn main() {
         position: Vector2::new(width as f32 * 0.5, height as f32 * 0.5),
         radius: 32,
         movement_speed: 3.0,
-        movement_direction: Vector2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)),
+        //movement_direction: Vector2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)),
+        movement_direction: Vector2::new(-1.0, 0.1),
     };
 
     let _image_context = image::init(InitFlag::PNG | InitFlag::JPG);
